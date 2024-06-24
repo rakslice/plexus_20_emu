@@ -79,6 +79,10 @@ int hd_handle_data_in(scsi_dev_t *dev, uint8_t *msg, int buflen) {
 		int lun=(hd->cmd[1]&0x60)>>5;
 		int lba=((hd->cmd[1]&0x1f)<<16)+(hd->cmd[2]<<8)+(hd->cmd[3]);
 		int tlen=hd->cmd[4]; //note 0 means 256 blocks...
+		if (tlen == 0) {
+			SCSI_LOG_DEBUG("SCSI HD: tlen 0->256\n");
+			tlen = 256;
+		}
 		if (first_reserved != 0) {
 			SCSI_LOG_DEBUG("SCSI HDFL: lun %d read cmd %d sectors at lba %d: byte 1 reserved bits set: 0x%x\n", lun, tlen, lba, first_reserved);
 		} else {
