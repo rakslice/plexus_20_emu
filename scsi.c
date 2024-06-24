@@ -160,6 +160,12 @@ const char *bit_str[]={
 	"O_SCSIIO", "O_SCSICD", "O_SCSIATN", "O_SCSIACK", "O_AUTOXFR"
 };
 
+const char *bit_str_in[]={
+       "I_NARBR", "I_SCZERO", "I_NSCPERR", "I_NSCBERR", "I_STIME", "I_SEL",
+       "I_BSY", "I_MYBIT", "I_REQ", "I_MSG", "I_SCRST",
+       "I_IO", "I_CD", "I_ATN", "I_ACK", "I_DATEN"
+};
+
 //this csr is at E0000E
 //note SCSIBUF is at 0xA7000
 
@@ -411,7 +417,7 @@ unsigned int scsi_get_scsireg(scsi_t *s) {
 //	dump_cpu_state();
 	SCSI_LOG_DEBUG("SCSI r: reg ");
 	for (int i=0; i<16; i++) {
-		if (ret&(1<<(15-i))) SCSI_LOG_DEBUG("%s ", bit_str[i]);
+		if (ret&(1<<(15-i))) SCSI_LOG_DEBUG("%s ", bit_str_in[i]);
 	}
 	SCSI_LOG_DEBUG("\n");
 
