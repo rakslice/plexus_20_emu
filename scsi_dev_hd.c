@@ -48,7 +48,8 @@ static int hd_handle_cmd(scsi_dev_t *dev, uint8_t *cd, int len) {
 		return SCSI_DEV_DATA_OUT;
 	} else if (cd[0]==0xC2) {
 		//omti config cmd?
-		return SCSI_DEV_DATA_IN;
+		//return SCSI_DEV_DATA_OUT;  // but data out is not implemented yet
+		return SCSI_DEV_STATUS;
 	} else {
 		SCSI_LOG_NOTICE("hd: unsupported cmd %d\n", cd[0]);
 		exit(1);
