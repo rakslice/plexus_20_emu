@@ -50,7 +50,7 @@ static int hd_handle_cmd(scsi_dev_t *dev, uint8_t *cd, int len) {
 		//omti config cmd?
 		return SCSI_DEV_DATA_IN;
 	} else {
-		printf("hd: unsupported cmd %d\n", cd[0]);
+		SCSI_LOG_NOTICE("hd: unsupported cmd %d\n", cd[0]);
 		exit(1);
 	}
 	return SCSI_DEV_DATA_IN;
@@ -93,7 +93,7 @@ int hd_handle_data_in(scsi_dev_t *dev, uint8_t *msg, int buflen) {
 		}
 		fseek(hd->hdfile, lba*512, SEEK_SET);
 		fread(msg, blen, 1, hd->hdfile);
-//		printf("Read %d bytes from LB %d\n", blen, lba);
+//		SCSI_LOG_DEBUG("Read %d bytes from LB %d\n", blen, lba);
 		return blen;
 	}
 }
@@ -103,7 +103,7 @@ static void hd_handle_data_out(scsi_dev_t *dev, uint8_t *msg, int len) {
 	if (hd->cmd[0]==0x15) { //mode select
 		//ignore
 	} else {
-		printf("hd: unsupported hd_handle_data_out 0x%x\n", hd->cmd[0]);
+		SCSI_LOG_NOTICE("hd: unsupported hd_handle_data_out 0x%x\n", hd->cmd[0]);
 		exit(1);
 	}
 }
