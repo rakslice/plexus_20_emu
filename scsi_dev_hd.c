@@ -113,8 +113,9 @@ int hd_handle_data_in(scsi_dev_t *dev, uint8_t *msg, int buflen) {
 	} else if (hd->cmd[0]==0xc2) {
 		//omti config command?
 	} else {
+		SCSI_LOG_NOTICE("hd: unsupported hd_handle_data_in 0x%x\n", hd->cmd[0]);
 		printf("Unknown command: 0x%x\n", hd->cmd[0]);
-//		assert(0 && "hd_handle_data_in: unknown cmd");
+		assert(0 && "hd_handle_data_in: unknown cmd");
 	}
 	return 0;
 }
