@@ -62,8 +62,8 @@ struct mem_range_t {
 
 static mem_range_t memory[]={
 //	{.name="RAM",     .offset=0, .size=0x200000, .flags=FLAG_USR_OK}, //only 2MiB of RAM
-	{.name="RAM",     .offset=0, .size=0x800000, .flags=FLAG_USR_OK}, //fully decked out with 8MiB of RAM
-	{.name="MAPRAM",  .offset=0, .size=0}, //MMU-mapped RAM
+	{.name="RAM",     .offset=0, .size=0x800000, /*.flags=FLAG_USR_OK*/}, //fully decked out with 8MiB of RAM
+	{.name="MAPRAM",  .offset=0, .size=0,        .flags=FLAG_USR_OK}, //MMU-mapped RAM
 	{.name="U17",     .offset=0x800000, .size=0x8000}, //used to be U19
 	{.name="U15",     .offset=0x808000, .size=0x8000}, //used to be U17
 	{.name="MAPPER",  .offset=0x900000, .size=0x4000},
