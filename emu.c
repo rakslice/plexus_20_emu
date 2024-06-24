@@ -36,7 +36,7 @@ int insn_id=0;
 
 int cur_cpu=0;
 
-unsigned int fc_bits=0;
+unsigned int fc_bits[2]={0,0};
 
 mapper_t *mapper;
 csr_t *csr;
@@ -169,8 +169,8 @@ void setup_rom(const char *name, const char *filename) {
 
 static int check_can_access(mem_range_t *m, unsigned int address) {
 	int ret=1;
-	if (cur_cpu==1 && ((fc_bits&4)==0) && ((m->flags&FLAG_USR_OK)==0)) {
-		EMU_LOG_INFO("Faulting CPU %d for accessing non-RAM address %X in user mode (fc=%x)\n", cur_cpu, address, fc_bits);
+	if (cur_cpu==1 && (fc_bits[cur_cpu]&4)==0 && (m->flags&FLAG_USR_OK)==0) {
+		EMU_LOG_INFO("Faulting CPU %d for accessing RAM address %X in user mode (fc=%x)\n", cur_cpu, address, fc_bits[cur_cpu]);
 		ret=0;
 	}
 	if (!ret) {
@@ -306,8 +306,8 @@ void emu_set_cur_mapid(uint8_t id) {
 
 static int check_mem_access(unsigned int address, int flags) {
 	if (!mapper_enabled) return 1;
-	if ((fc_bits&3)==2) flags=ACCESS_X;
-	if (fc_bits&4) flags|=ACCESS_SYSTEM;
+	if ((fc_bits[cur_cpu]&3)==2) flags=ACCESS_X;
+	if (fc_bits[cur_cpu]&4) flags|=ACCESS_SYSTEM;
 	if (!mapper_access_allowed(mapper, address, flags)) {
 		EMU_LOG_DEBUG("Bus error! Access %x\n", address);
 //		if (address==0x1000) do_tracefile=1;
@@ -596,7 +596,7 @@ void setup_nop(const char *name) {
 
 
 void m68k_fc_cb(unsigned int fc) {
-	fc_bits=fc;
+	fc_bits[cur_cpu]=fc;
 	mapper_set_sysmode(mapper, fc&4);
 	//Guess: mapid resets on int?
 	if ((fc&0x7)==7) {
@@ -738,6 +738,7 @@ void emu_start(emu_cfg_t *cfg) {
 	cpuctx[1]=calloc(m68k_context_size(), 1); //job cpu
 
 	for (int i=0; i<2; i++) {
+		cur_cpu=i;
 		m68k_set_context(cpuctx[i]);
 		m68k_set_cpu_type(M68K_CPU_TYPE_68010);
 		m68k_init();
@@ -757,6 +758,7 @@ void emu_start(emu_cfg_t *cfg) {
 		for (int i=0; i<2; i++) {
 			m68k_set_context(cpuctx[i]);
 			cur_cpu=i;
+			m68k_fc_cb(fc_bits[cur_cpu]); // updates the mapper for the new cpu's fc bits
 			if (need_raise_highest_int[i]) {
 				raise_highest_int();
 				need_raise_highest_int[i]=0;
