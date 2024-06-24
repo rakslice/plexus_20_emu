@@ -98,8 +98,16 @@ int hd_handle_data_in(scsi_dev_t *dev, uint8_t *msg, int buflen) {
 				msg[i] = 0;
 			return blen;
 		}
-		fseek(hd->hdfile, lba*512, SEEK_SET);
-		fread(msg, blen, 1, hd->hdfile);
+
+		if (fseek(hd->hdfile, lba*512, SEEK_SET)!=0) {
+			SCSI_LOG_NOTICE("Seek to lba %d failed\n", lba);
+			exit(1);
+		};
+		int read_result = fread(msg, blen, 1, hd->hdfile);
+		if (read_result != 1) {
+			SCSI_LOG_NOTICE("Read of %d sectors at %d failed, got %d\n", tlen, lba, read_result);
+			exit(1);
+		}
 //		SCSI_LOG_DEBUG("Read %d bytes from LB %d\n", blen, lba);
 		return blen;
 	} else if (hd->cmd[0]==0xc2) {
