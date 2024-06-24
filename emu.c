@@ -135,9 +135,8 @@ void dump_cpu_state() {
 
 	unsigned int d0=m68k_get_reg(NULL, M68K_REG_D0);
 
-	unsigned int mem=m68k_read_memory_8(0xc00604);
+	EMU_LOG_INFO("id %d CPU %d PC %08X SP %08X SR %08X D0 %08X\n", insn_id, cur_cpu, pc, sp, sr, d0);
 
-	EMU_LOG_INFO("id %d CPU %d PC %08X SP %08X SR %08X D0 %08X m %08X\n", insn_id, cur_cpu, pc, sp, sr, d0, mem);
 	// let's try
 	//disassemble_ram(0x0, 2048);
 }
