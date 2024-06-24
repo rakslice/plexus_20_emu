@@ -107,6 +107,10 @@ int hd_handle_data_in(scsi_dev_t *dev, uint8_t *msg, int buflen) {
 		}
 //		SCSI_LOG_DEBUG("Read %d bytes from LB %d\n", blen, lba);
 		return blen;
+	} else {
+		SCSI_LOG_NOTICE("hd: unsupported hd_handle_data_in 0x%x\n", hd->cmd[0]);
+		exit(1);
+
 	}
 }
 
