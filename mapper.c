@@ -93,6 +93,7 @@ void mapper_write16(void *obj, unsigned int a, unsigned int val) {
 	if (emu_get_cur_cpu()==0) return; //seems writes from dma cpu are not allowed
 
 	mapper_t *m=(mapper_t*)obj;
+	assert((a&1)==0);
 	a=a/2; //word addr
 	if (a&1) {
 		m->desc[a/2].w1=val;
@@ -110,6 +111,7 @@ void mapper_write32(void *obj, unsigned int a, unsigned int val) {
 
 unsigned int mapper_read16(void *obj, unsigned int a) {
 	mapper_t *m=(mapper_t*)obj;
+	assert((a&1)==0);
 	a=a/2; //word addr
 	if (a/2==2048) MAPPER_LOG_DEBUG("read page %d, w%d. w0=%x, w1=%x\n", a/2, a&1, m->desc[a/2].w0, m->desc[a/2].w1);
 	if (a&1) {

@@ -149,6 +149,7 @@ void csr_set_parity_error(csr_t *c, int hl) {
 }
 
 void csr_write16(void *obj, unsigned int a, unsigned int val) {
+	assert((a&1)==0);
 	csr_t *c=(csr_t*)obj;
 	if (a==CSR_I_PERR1) return; //ro
 	if (a==CSR_O_RSEL) {
@@ -212,6 +213,7 @@ void csr_write8(void *obj, unsigned int a, unsigned int val) {
 
 
 unsigned int csr_read16(void *obj, unsigned int a) {
+	assert((a&1)==0);
 	csr_t *c=(csr_t*)obj;
 	int b=scsi_get_bytecount(c->scsi);
 	c->reg[CSR_O_SC_C/2]=b>>16;
