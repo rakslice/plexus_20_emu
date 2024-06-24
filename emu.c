@@ -700,12 +700,14 @@ int page_address_to_entry(int a) {
 	int page = a/4096;
 	// each page has 2w == 4 bytes entry
 	int pos = page*4;
-	printf("reaading mapper32 %d\n", pos);
+	printf("reading mapper32 %d\n", pos);
 	int entry = mapper_read32(mapper, pos);
-	int physpage = (entry>>16)&0x7ff;
-	int w0 = entry&0xffff;
+	int w0 = (entry>>16)&0xffff;
+	int w1 = entry&0xffff;
+	int physpage = w1&0x7ff;
+	int uid = w0>>8;
 
-	printf("0x%08x: phys page number %d uid %d\n", entry, physpage, w0>>8 );
+	printf("0x%08x: phys page number %d uid %d\n", entry, physpage, uid );
 	return physpage*4096;
 }
 
@@ -729,7 +731,7 @@ void m68k_trace_cb(unsigned int pc) {
 	if (cur_cpu==1 && (pc&0xffffff)==0x5a0) {
 		printf("AT the starting point for mapid 1\n");
 		for (int addr = 0; addr < 0x4000; addr += 0x1000) {
-			printf("%x = %08x\n", addr, page_address_to_entry(addr));
+			printf("virtual page address %x = physical page address %08x\n", addr, page_address_to_entry(addr));
 		}
 
 		printf("fc bits 0x%x\n", fc_bits[cur_cpu]);
