@@ -38,6 +38,8 @@ static void uart_set_console_raw_mode() {
 	raw.c_lflag &= ~(ECHO | ICANON);
 	int result = tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);
 	UART_LOG_INFO("Entering tty raw mode: %d (%d)\n", result, errno);
+	setvbuf(stdout, NULL, _IONBF, 0);
+	UART_LOG_INFO("Disabling output buffering\n");
 }
 
 static int uart_poll_for_console_character() {
