@@ -6,6 +6,13 @@
 #include "emu.h"
 #include "log.h"
 
+// Debug logging
+#define SCSI_LOG(msg_level, format_and_args...) \
+        log_printf(LOG_SRC_SCSI, msg_level, format_and_args)
+#define SCSI_LOG_DEBUG(format_and_args...)  SCSI_LOG(LOG_DEBUG,  format_and_args)
+#define SCSI_LOG_INFO(format_and_args...)   SCSI_LOG(LOG_INFO,   format_and_args)
+#define SCSI_LOG_NOTICE(format_and_args...) SCSI_LOG(LOG_NOTICE, format_and_args)
+
 typedef struct {
 	scsi_dev_t dev;
 	FILE *hdfile;
@@ -54,15 +61,36 @@ int hd_handle_data_in(scsi_dev_t *dev, uint8_t *msg, int buflen) {
 	if (hd->cmd[0]==3) { //sense
 		int clen=hd->cmd[4];
 		if (clen==0) clen=4; //per scsi spec
-		int lun=hd->cmd[1]>>5;
+		int lun=(hd->cmd[1]&0x60)>>5;
 		if (clen>buflen) clen=buflen;
 		memcpy(msg, sense, clen);
+
+		if (lun != 0) {
+			SCSI_LOG_DEBUG("SCSI HDFL: lun %d sense, let's give drive not ready\n", lun);
+			msg[0] = 0x4;
+			msg[1] |= lun<<5;
+		}
 		return clen;
 	} else if (hd->cmd[0]==8) { //read
-		int lba=(hd->cmd[1]<<16)+(hd->cmd[2]<<8)+(hd->cmd[3]);
+		int first_reserved=hd->cmd[1]&0x80;
+		int lun=(hd->cmd[1]&0x60)>>5;
+		int lba=((hd->cmd[1]&0x1f)<<16)+(hd->cmd[2]<<8)+(hd->cmd[3]);
 		int tlen=hd->cmd[4]; //note 0 means 256 blocks...
+		if (first_reserved != 0) {
+			SCSI_LOG_DEBUG("SCSI HDFL: lun %d read cmd %d sectors at lba %d: byte 1 reserved bits set: 0x%x\n", lun, tlen, lba, first_reserved);
+		} else {
+			SCSI_LOG_DEBUG("SCSI HDFL: lun %d read cmd %d sectors at lba %d\n", lun, tlen, lba);
+		}
+
 		int blen=tlen*512;
 		if (blen>buflen) blen=buflen;
+
+		if (lun!=0) {
+			SCSI_LOG_DEBUG("SCSI HDFL: read cmd giving placeholder data for unavailable lun %d\n", lun);
+			for (int i = 0; i < blen; i++)
+				msg[i] = 0;
+			return blen;
+		}
 		fseek(hd->hdfile, lba*512, SEEK_SET);
 		fread(msg, blen, 1, hd->hdfile);
 //		printf("Read %d bytes from LB %d\n", blen, lba);
@@ -74,12 +102,45 @@ static void hd_handle_data_out(scsi_dev_t *dev, uint8_t *msg, int len) {
 	scsi_hd_t *hd=(scsi_hd_t*)dev;
 	if (hd->cmd[0]==0x15) { //mode select
 		//ignore
+	} else {
+		printf("hd: unsupported hd_handle_data_out 0x%x\n", hd->cmd[0]);
+		exit(1);
 	}
 }
 
 static int hd_handle_status(scsi_dev_t *dev) {
 	scsi_hd_t *hd=(scsi_hd_t*)dev;
-	if (hd->cmd[0]==0) return 0;
+	if (hd->cmd[0]==0) {
+		int lun=(hd->cmd[1]&0x60)>>5;
+		if (lun != 0) {
+			SCSI_LOG_DEBUG("SCSI HDFL: lun %d test, lun not available; check condition\n", lun);
+			return (lun<<5)|2; // check condition with lun
+		}
+
+		return 0;
+	}
+	else if (hd->cmd[0]==1) { // recalibrate;
+		return 0;
+	}
+	else if (hd->cmd[0]==0xc2) { // omti disk config
+		return 0;
+	}
+	else if (hd->cmd[0]==3) { // request sense;
+		int lun=(hd->cmd[1]&0x60)>>5;
+		SCSI_LOG_DEBUG("SCSI HDFL: lun %d request sense\n", lun);
+		return 0;
+	}
+	else if (hd->cmd[0]==8) { // read
+		int lun=(hd->cmd[1]&0x60)>>5;
+		if (lun != 0) {
+			SCSI_LOG_DEBUG("SCSI HDFL: lun %d drive not available; check condition\n", lun);
+			return (lun<<5)|2; // check condition with lun
+		}
+	}
+	else {
+		SCSI_LOG_DEBUG("SCSI HDFL: unimplemented status 0x%x\n", hd->cmd[0]);
+		exit(1);
+	}
 	return 0; //ok
 }
 
