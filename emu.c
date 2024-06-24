@@ -88,6 +88,46 @@ int trace_enabled=0;
 
 int mapper_enabled=0;
 
+static mem_range_t *find_range_by_name(const char *name);
+
+mem_range_t * disasm_mem() {
+	//mem_range_t *physram=find_range_by_name("RAM");
+	mem_range_t *physram=find_range_by_name("MAPRAM");
+	return physram;
+}
+
+unsigned int m68k_read_disassembler_8  (unsigned int address) {
+	mem_range_t * m = disasm_mem();
+	return m->read8(m->obj, address);
+}
+unsigned int m68k_read_disassembler_16 (unsigned int address) {
+	mem_range_t * m = disasm_mem();
+	return m->read16(m->obj, address);
+}
+unsigned int m68k_read_disassembler_32 (unsigned int address) {
+	mem_range_t * m = disasm_mem();
+	return m->read32(m->obj, address);
+}
+
+void disassemble_ram(int pc, int offset, int len) {
+
+	int pos = pc + offset;
+	char buff[100];
+	int ret;
+	for (int i = 0; ; i++) {
+		ret = m68k_disassemble(buff, pos, M68K_CPU_TYPE_68010);
+		printf("dasm 0x%x: ", pos - offset);
+		for (int j = 0; j < ret; j++) {
+			printf("%02x ", m68k_read_disassembler_8(pos + j));
+		}
+		printf(" %s\n", buff);
+		pos += ret;
+		if (pos >= pc + offset + len)
+		break;
+	}
+	printf("ret 0x%x\n", ret);
+}
+
 void dump_cpu_state() {
 	//note REG_PPC is previous PC, aka the currently executing insn
 	unsigned int pc=m68k_get_reg(NULL, M68K_REG_PPC);
@@ -96,6 +136,8 @@ void dump_cpu_state() {
 	unsigned int d0=m68k_get_reg(NULL, M68K_REG_D0);
 
 	EMU_LOG_INFO("id %d CPU %d PC %08X SP %08X SR %08X D0 %08X\n", insn_id, cur_cpu, pc, sp, sr, d0);
+	// let's try
+	//disassemble_ram(0x0, 2048);
 }
 
 void dump_callstack() {
@@ -675,6 +717,19 @@ void emu_raise_rtc_int() {
 
 int old_val;
 
+int page_address_to_entry(int a) {
+	int page = a/4096;
+	// each page has 2w == 4 bytes entry
+	int pos = page*4;
+	printf("reaading mapper32 %d\n", pos);
+	int entry = mapper_read32(mapper, pos);
+	int physpage = (entry>>16)&0x7ff;
+	int w0 = entry&0xffff;
+
+	printf("0x%08x: phys page number %d uid %d\n", entry, physpage, w0>>8 );
+	return physpage*4096;
+}
+
 void m68k_trace_cb(unsigned int pc) {
 	insn_id++;
 	if (0 &&(pc==0x80bbd4 || pc==0xc0245C)) {
@@ -699,6 +754,19 @@ void m68k_trace_cb(unsigned int pc) {
 	prev_pc=pc;
 	unsigned int sr=m68k_get_reg(NULL, M68K_REG_SR);
 	if (do_tracefile) fprintf(tracefile, "%d %d %06x %x\n", insn_id, cur_cpu, pc, sr);
+	if (cur_cpu==1 && (pc&0xffffff)==0x5a0) {
+		printf("AT the starting point for mapid 1\n");
+		for (int addr = 0; addr < 0x4000; addr += 0x1000) {
+			printf("%x = %08x\n", addr, page_address_to_entry(addr));
+		}
+
+		printf("fc bits 0x%x\n", fc_bits[cur_cpu]);
+
+		//mapper_set_sysmode(mapper, 1);
+		dump_cpu_state();
+		//disassemble_ram(0x400, 0, 0x2000-0x400);
+		//exit(1);
+	}
 	if (!trace_enabled) return;
 	dump_cpu_state();
 }
