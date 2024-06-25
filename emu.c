@@ -217,6 +217,7 @@ static int check_can_access(mem_range_t *m, unsigned int address) {
 	}
 	if (!ret) {
 		csr_set_access_error(csr, cur_cpu, ACCESS_ERROR_A, address, 0);
+		m68k_set_bus_error_fault_address(address);
 		m68k_pulse_bus_error();
 	}
 	return ret;
@@ -363,6 +364,8 @@ static int check_mem_access(unsigned int address, int flags) {
 
 		//note THIS WILL NOT RETURN!
 		//(m68ki_exception_bus_error ends with a longjmp)
+
+		m68k_set_bus_error_fault_address(address);
 		m68k_pulse_bus_error();
 		return 0;
 	}
@@ -499,7 +502,7 @@ int emu_write_byte(int addr, int val) {
 void emu_mbus_error(unsigned int addr) {
 	csr_set_access_error(csr, 1, ACCESS_ERROR_MBTO, addr&0xffffff, !(addr&EMU_MBUS_ERROR_READ));
 	if (addr&EMU_MBUS_BUSERROR) {
-		emu_bus_error();
+		emu_bus_error(addr&0xffffff);
 	}
 }
 
@@ -786,9 +789,10 @@ int emu_get_cur_cpu() {
 	return cur_cpu;
 }
 
-void emu_bus_error() {
+void emu_bus_error(unsigned int address) {
 	EMU_LOG_INFO("Bus error on CPU %d\n", cur_cpu);
 	dump_cpu_state();
+	m68k_set_bus_error_fault_address(address);
 	m68k_pulse_bus_error();
 }
 

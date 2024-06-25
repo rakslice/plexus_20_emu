@@ -347,6 +347,8 @@ unsigned int m68k_get_virq(unsigned int level);
 /* Halt the CPU as if you pulsed the HALT pin. */
 void m68k_pulse_halt(void);
 
+/* Set the fault address for the following pulse bus error call */
+void m68k_set_bus_error_fault_address(unsigned int);
 
 /* Trigger a bus error exception */
 void m68k_pulse_bus_error(void);
