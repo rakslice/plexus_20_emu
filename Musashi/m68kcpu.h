@@ -911,6 +911,9 @@ extern jmp_buf m68ki_aerr_trap;
 #define m68ki_read_data_16(A) 	m68ki_read_16_fc(A, FLAG_S | FUNCTION_CODE_USER_DATA)
 #define m68ki_read_data_32(A) 	m68ki_read_32_fc(A, FLAG_S | FUNCTION_CODE_USER_DATA)
 
+/* Stored fault address for bus error */
+unsigned int m68ki_get_last_bus_error_fault_address();
+void m68ki_clear_last_bus_error_fault_address();
 
 
 /* ======================================================================== */
@@ -1692,8 +1695,6 @@ static inline void m68ki_stack_frame_buserr(uint sr)
 	m68ki_push_16(m68ki_aerr_write_mode | CPU_INSTR_MODE | m68ki_aerr_fc);
 }
 
-static unsigned int last_bus_error_fault_address;
-
 /* Format 8 stack frame (68010).
  * 68010 only.  This is the 29 word bus/address error frame.
  */
@@ -1734,8 +1735,8 @@ static inline void m68ki_stack_frame_1000(uint pc, uint sr, uint vector)
 	m68ki_fake_push_16();
 
 	/* FAULT ADDRESS */
-	m68ki_push_32(last_bus_error_fault_address);
-	last_bus_error_fault_address=0;
+	m68ki_push_32(m68ki_get_last_bus_error_fault_address());
+	m68ki_clear_last_bus_error_fault_address();
 
 	/* SPECIAL STATUS WORD */
 	m68ki_push_16(orig_fc | 
@@ -1952,10 +1953,6 @@ extern jmp_buf m68ki_bus_error_jmp_buf;
 
 #define m68ki_check_bus_error_trap() setjmp(m68ki_bus_error_jmp_buf)
 
-void m68k_set_bus_error_fault_address(unsigned int a) {
-	last_bus_error_fault_address = a;
-}
-
 /* Exception for bus error */
 static inline void m68ki_exception_bus_error(void)
 {
@@ -1989,7 +1986,7 @@ static inline void m68ki_exception_bus_error(void)
 	m68ki_cpu.mmu_tmp_buserror_newpc=REG_PC;
 	m68ki_stack_frame_1000(REG_PPC, sr, EXCEPTION_BUS_ERROR);
 
-	last_bus_error_fault_address=0;
+	m68ki_clear_last_bus_error_fault_address();
 
 	m68ki_jump_vector(EXCEPTION_BUS_ERROR);
 

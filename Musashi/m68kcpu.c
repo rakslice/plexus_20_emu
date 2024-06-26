@@ -524,6 +524,21 @@ const uint8 m68ki_ea_idx_cycle_table[64] =
 };
 
 
+unsigned int m68ki_last_bus_error_fault_address;
+
+void m68k_set_bus_error_fault_address(unsigned int a) {
+        m68ki_last_bus_error_fault_address = a;
+}
+
+unsigned int m68ki_get_last_bus_error_fault_address() {
+	return m68ki_last_bus_error_fault_address;
+}
+
+void m68ki_clear_last_bus_error_fault_address() {
+	m68ki_last_bus_error_fault_address = 0;
+}
+
+
 
 /* ======================================================================== */
 /* =============================== CALLBACKS ============================== */
