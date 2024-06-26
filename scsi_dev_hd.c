@@ -38,13 +38,16 @@ static int hd_handle_cmd(scsi_dev_t *dev, uint8_t *cd, int len) {
 		return SCSI_DEV_DATA_IN;
 	} else if (cd[0]==8) {
 		return SCSI_DEV_DATA_IN;
+	} else if (cd[0]==10) {
+		//return SCSI_DEV_DATA_OUT; // not implemented yet
+		return SCSI_DEV_DATA_IN;
 	} else if (cd[0]==0x15) { //mode select
-		return SCSI_DEV_DATA_OUT;
+		return SCSI_DEV_DATA_OUT; // not implemented yet
 	} else if (cd[0]==0xC2) {
 		//omti config cmd?
 		return SCSI_DEV_DATA_IN;
 	} else {
-		printf("hd: unsupported cmd %d\n", cd[0]);
+		printf("hd: unsupported cmd 0x%x (%d)\n", cd[0], cd[0]);
 		exit(1);
 	}
 	return SCSI_DEV_DATA_IN;
@@ -68,6 +71,9 @@ int hd_handle_data_in(scsi_dev_t *dev, uint8_t *msg, int buflen) {
 		fread(msg, blen, 1, hd->hdfile);
 //		printf("Read %d bytes from LB %d\n", blen, lba);
 		return blen;
+	} else if (hd->cmd[0]==0xa) {
+		//write placeholder
+
 	} else if (hd->cmd[0]==0xc2) {
 		//omti config command?
 	} else {
