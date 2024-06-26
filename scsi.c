@@ -374,8 +374,33 @@ void scsi_set_scsireg(scsi_t *s, unsigned int val) {
 		//should go to S_M_I
 		s->state=STATE_MSGIN;
 		s->op_timeout_us=2;
-	} else if ((val&O_AUTOXFR) && (s->state==STATE_CMD_DOUT)) {
-		//todo
+	} else if ((val&O_AUTOXFR) && (val&O_CDPTR)==0 && (val&O_IOPTR)==0 && (s->state==STATE_CMD_DOUT)) {
+		int cmd = s->cmd[0];
+		SCSI_LOG_DEBUG("SCSI: handle state data out cmd=0x%x\n", cmd);
+
+		int len=s->bytecount;
+		uint8_t msg[4096];
+		if (len>4096) len=4096;
+
+		SCSI_LOG_DEBUG("SCSI Data to device: ");
+		for (int i=0; i<len; i++) {
+			msg[i]=emu_read_byte(s->pointer++);
+			SCSI_LOG_DEBUG("%02X ", msg[i]);
+		}
+		SCSI_LOG_DEBUG("\n");
+		if (s->dev[s->selected]) {
+			// these don't have a return value, they have to have a status call
+			s->dev[s->selected]->handle_data_out(s->dev[s->selected], msg, len);
+		}
+		int status=1;
+		if (s->dev[s->selected]) {
+			status=s->dev[s->selected]->handle_status(s->dev[s->selected]);
+		}
+		s->buf[2]=0; s->buf[3]=status;
+		SCSI_LOG_DEBUG("SCSI: Device returns status %d\n", status);
+		s->state=STATE_STATUS;
+		//Next state sets us up for status.
+		val|=I_CD|I_IO|I_NSCPERR|I_NSCBERR;
 	} else if (s->state==STATE_MSGIN) {
 		val&=~(I_ACK|I_IO|I_CD|I_MSG|I_BSY);
 		val|=I_ACK;
