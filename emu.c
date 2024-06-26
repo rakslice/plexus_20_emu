@@ -114,11 +114,15 @@ void disassemble_ram(int pc, int offset, int len) {
 	int pos = pc + offset;
 	char buff[100];
 	int ret;
+	int pad_to_ins = 6;
 	for (int i = 0; ; i++) {
 		ret = m68k_disassemble(buff, pos, M68K_CPU_TYPE_68010);
-		printf("dasm 0x%x: ", pos - offset);
+		printf("%06x: ", pos - offset);
 		for (int j = 0; j < ret; j++) {
 			printf("%02x ", m68k_read_disassembler_8(pos + j));
+		}
+		for (int j = ret; j < pad_to_ins; j++) {
+			printf("   ");
 		}
 		printf(" %s\n", buff);
 		pos += ret;
@@ -136,8 +140,17 @@ void dump_cpu_state() {
 	unsigned int d0=m68k_get_reg(NULL, M68K_REG_D0);
 
 	EMU_LOG_INFO("id %d CPU %d PC %08X SP %08X SR %08X D0 %08X\n", insn_id, cur_cpu, pc, sp, sr, d0);
-	// let's try
-	//disassemble_ram(0x0, 2048);
+
+	int do_disassembly=0;
+
+	if (do_disassembly) {
+		if (pc < 0x800000) {
+			int len = 0x50;
+			printf("Disassembling from PC=0x%06x for %d bytes\n", pc, len);
+			disassemble_ram(pc, 0, len);
+		}
+		printf("Continuing.\n");
+	}
 }
 
 void dump_callstack() {
