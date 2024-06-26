@@ -763,7 +763,7 @@ void m68k_trace_cb(unsigned int pc) {
 			printf("%x = %08x\n", addr, page_address_to_entry(addr));
 		}
 
-		printf("fc bits 0x%x\n", fc_bits[cur_cpu]);
+		printf("fc bits 0x%x\n", fc_bits);
 
 		//mapper_set_sysmode(mapper, 1);
 		dump_cpu_state();
