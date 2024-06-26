@@ -676,10 +676,6 @@ void setup_nop(const char *name) {
 void m68k_fc_cb(unsigned int fc) {
 	fc_bits=fc;
 	mapper_set_sysmode(mapper, fc&4);
-	//Guess: mapid resets on int?
-	if ((fc&0x7)==7) {
-		mapper_set_mapid(mapper, 0);
-	}
 }
 
 //has a level if triggered, otherwise 0
