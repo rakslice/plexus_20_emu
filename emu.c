@@ -770,19 +770,30 @@ void m68k_trace_cb(unsigned int pc) {
 	prev_pc=pc;
 	unsigned int sr=m68k_get_reg(NULL, M68K_REG_SR);
 	if (do_tracefile) fprintf(tracefile, "%d %d %06x %x\n", insn_id, cur_cpu, pc, sr);
-	if (cur_cpu==1 && (pc&0xffffff)==0x5a0) {
+
+	/*
+	// place for one-shot investigations of system state at certain events
+	static int one_shot = 1;
+	if (cur_cpu==1 && (pc&0xffffff)==0x5a0 && one_shot) {
+		one_shot = 0;
 		printf("AT the starting point for mapid 1\n");
-		for (int addr = 0; addr < 0x4000; addr += 0x1000) {
-			printf("%x = %08x\n", addr, page_address_to_entry(addr));
-		}
+		page_address_to_entry(0);
+		page_address_to_entry(0x1000);
+		page_address_to_entry(0x2000);
+		page_address_to_entry(0x7fd000);
+		page_address_to_entry(0x7fe000);
+		page_address_to_entry(0x7ff000);
 
 		printf("fc bits 0x%x\n", fc_bits);
 
 		//mapper_set_sysmode(mapper, 1);
 		dump_cpu_state();
-		//disassemble_ram(0x400, 0, 0x2000-0x400);
+		disassemble_ram(0xc02, 0, 0x400);
 		//exit(1);
+		//do_tracefile=1;
 	}
+	*/
+
 	if (!trace_enabled) return;
 	dump_cpu_state();
 }
