@@ -41,3 +41,8 @@ void emu_schedule_int_us(int us);
 #define EMU_MBUS_ERROR_READ 0x80000000
 #define EMU_MBUS_BUSERROR 0x40000000
 void emu_mbus_error(unsigned int addr);
+
+#define EMU_DMA_OOPS_MBUS 0x80000000
+#define EMU_DMA_OOPS_MAPPER 0x40000000
+#define EMU_DMA_OOPS_WRITE 0x20000000
+void emu_dma_oops(unsigned int addr);

@@ -151,6 +151,9 @@ void csr_set_access_error(csr_t *csr, int cpu, int type, int addr, int is_write)
 			if (!is_write) csr->reg[CSR_I_MBERR/2]|=0x1;
 		}
 	}
+	if (type&ACCESS_ERROR_OOPS) {
+		v|=ERR_SOOPS;
+	}
 	csr->reg[CSR_I_ERR/2]|=v;
 }
 

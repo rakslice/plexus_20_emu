@@ -502,6 +502,16 @@ void emu_mbus_error(unsigned int addr) {
 	}
 }
 
+void emu_dma_oops(unsigned int addr) {
+	unsigned int range=0;
+	if (addr&EMU_DMA_OOPS_MAPPER) {
+		range = find_range_by_name("MAPPER")->offset;
+	} else if (addr&EMU_DMA_OOPS_MBUS) {
+		range = find_range_by_name("MBUSIO")->offset;
+	}
+	csr_set_access_error(csr, 0, ACCESS_ERROR_OOPS, (addr&0xffffff)+range, addr&EMU_DMA_OOPS_WRITE);
+}
+
 int mbus_diag_en=0;
 
 void emu_set_mb_diag(int ena) {

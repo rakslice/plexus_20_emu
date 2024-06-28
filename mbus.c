@@ -28,6 +28,10 @@ static int mbus_held() {
 }
 
 void mbus_write8(void *obj, unsigned int a, unsigned int val) {
+	if (emu_get_cur_cpu() == 0) {
+		emu_dma_oops((a+0x80000)|EMU_DMA_OOPS_MBUS|EMU_DMA_OOPS_WRITE);
+		return;
+	}
 	MBUS_LOG_DEBUG("MBUS: wb %x->%x %x\n", a, a+0x780000, val);
 	if (mbus_held()) {
 		MBUS_LOG_NOTICE("MBUS: ^^ write held.\n");
@@ -41,6 +45,10 @@ void mbus_write8(void *obj, unsigned int a, unsigned int val) {
 }
 
 void mbus_write16(void *obj, unsigned int a, unsigned int val) {
+	if (emu_get_cur_cpu() == 0) {
+		emu_dma_oops((a+0x80000)|EMU_DMA_OOPS_MBUS|EMU_DMA_OOPS_WRITE);
+		return;
+	}
 	MBUS_LOG_DEBUG("MBUS: ww %x->%x %x\n", a, a+0x780000, val);
 	if (mbus_held()) {
 		MBUS_LOG_NOTICE("MBUS: ^^ write held.\n");
@@ -60,6 +68,10 @@ void mbus_write32(void *obj, unsigned int a, unsigned int val) {
 }
 
 unsigned int mbus_read8(void *obj, unsigned int a) {
+	if (emu_get_cur_cpu() == 0) {
+		emu_dma_oops((a+0x80000)|EMU_DMA_OOPS_MBUS);
+		return 0;
+	}
 	MBUS_LOG_DEBUG("MBUS: rb %x->%x\n", a, a+0x780000);
 	if (!emu_get_mb_diag()) return 0;
 	//Mbus in diag modes errors with a MBTO.
@@ -68,6 +80,10 @@ unsigned int mbus_read8(void *obj, unsigned int a) {
 }
 
 unsigned int mbus_read16(void *obj, unsigned int a) {
+	if (emu_get_cur_cpu() == 0) {
+		emu_dma_oops((a+0x80000)|EMU_DMA_OOPS_MBUS);
+		return 0;
+	}
 	MBUS_LOG_DEBUG("MBUS: rw %x->%x\n", a, a+0x780000);
 	if (!emu_get_mb_diag()) return 0;
 	//Mbus in diag modes errors with a MBTO.
@@ -80,12 +96,20 @@ unsigned int mbus_read32(void *obj, unsigned int a) {
 }
 
 void mbus_io_write(void *obj, unsigned int a, unsigned int val) {
+	if (emu_get_cur_cpu() == 0) {
+		emu_dma_oops(a|EMU_DMA_OOPS_MBUS|EMU_DMA_OOPS_WRITE);
+		return;
+	}
 	if (emu_get_mb_diag()) return;
 	MBUS_LOG_DEBUG("mbio wr %x\n", a);
 	emu_mbus_error(a|EMU_MBUS_BUSERROR);
 }
 
 unsigned int mbus_io_read(void *obj, unsigned int a) {
+	if (emu_get_cur_cpu() == 0) {
+		emu_dma_oops(a|EMU_DMA_OOPS_MBUS);
+		return 0;
+	}
 	if (emu_get_mb_diag()) return 0;
 	MBUS_LOG_DEBUG("mbio rd %x\n", a);
 	emu_mbus_error(a|EMU_MBUS_ERROR_READ|EMU_MBUS_BUSERROR);

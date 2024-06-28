@@ -111,7 +111,11 @@ int mapper_access_allowed(mapper_t *m, unsigned int a, int access_flags) {
 
 
 void mapper_write16(void *obj, unsigned int a, unsigned int val) {
-	if (emu_get_cur_cpu()==0) return; //seems writes from dma cpu are not allowed
+	if (emu_get_cur_cpu()==0) {
+		//seems writes from dma cpu are not allowed
+		emu_dma_oops(a|EMU_DMA_OOPS_MAPPER|EMU_DMA_OOPS_WRITE);
+		return;
+	}
 
 	mapper_t *m=(mapper_t*)obj;
 	a=a/2; //word addr
@@ -129,6 +133,10 @@ void mapper_write32(void *obj, unsigned int a, unsigned int val) {
 
 
 unsigned int mapper_read16(void *obj, unsigned int a) {
+	if (emu_get_cur_cpu()==0) {
+		emu_dma_oops(a|EMU_DMA_OOPS_MAPPER);
+		return 0;
+	}
 	assert((a&1)==0);
 	mapper_t *m=(mapper_t*)obj;
 	a=a/2; //word addr
