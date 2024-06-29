@@ -92,12 +92,19 @@ void uart_console_printc(char val) {
 
 #define INTCTL_STATUS_AFFECTS_VECTOR 0x4
 
+// set to 0 for no rate limit
+//static const int ticks_per_rcv=69; // 14400 bytes/s == 115200 bps
+//static const int ticks_per_rcv=417; // 19200 bps
+//static const int ticks_per_rcv=834; // 9600 bps
+static const int ticks_per_rcv=1667; // 4800 bps
+//static const int ticks_per_rcv=3000; // ~2400 bps
 
 typedef struct {
 	uint8_t regs[32];
 	uint8_t char_rcv;
 	uint8_t has_char_rcv;
-	uint8_t ticks_to_loopback;
+	uint8_t ticks_to_loopback; //usec
+	int ticks_to_next_rcv; //usec
 } chan_t;
 
 struct uart_t {
@@ -197,6 +204,22 @@ void uart_write8(void *obj, unsigned int addr, unsigned int val) {
 	check_ints(u);
 }
 
+static void uart_receive_char(uart_t * u, int chan) {
+	if (!u->chan[chan].has_char_rcv) {
+		if (u->chan[chan].ticks_to_next_rcv > 0) {
+			// not yet
+			return;
+		}
+
+		int in_ch = uart_poll_for_console_character();
+		if (in_ch >= 0) {
+			u->chan[chan].char_rcv = in_ch;
+			u->chan[chan].has_char_rcv = 1;
+			u->chan[chan].ticks_to_next_rcv = ticks_per_rcv;
+		}
+	}
+}
+
 unsigned int uart_read8(void *obj, unsigned int addr) {
 	uart_t *u=(uart_t*)obj;
 	addr=addr/2; //8-bit thing on 16-bit bus
@@ -207,12 +230,8 @@ unsigned int uart_read8(void *obj, unsigned int addr) {
 	// Poll for console input if the emulated device might be expecting data
 	// (done at top of function because .has_char_rcv being set will determine
 	// if the character is ever read; so we cannot only do it in read character)
-	if (chan==1 && u->is_console && !is_in_loopback && !u->chan[chan].has_char_rcv) {
-		int in_ch = uart_poll_for_console_character();
-		if (in_ch >= 0) {
-			u->chan[chan].char_rcv = in_ch;
-			u->chan[chan].has_char_rcv = 1;
-		}
+	if (chan==1 && u->is_console && !is_in_loopback) {
+		uart_receive_char(u, chan);
 	}
 
 	int ret=u->chan[chan].regs[a];
@@ -259,6 +278,9 @@ void uart_tick(uart_t *u, int ticklen_us) {
 				u->chan[c].ticks_to_loopback=0;
 			}
 		}
+		if (u->chan[c].ticks_to_next_rcv > 0) {
+			u->chan[c].ticks_to_next_rcv-=ticklen_us;
+		}
 	}
 
 	// if our console uart has ints enabled on ch B just poll it
@@ -267,11 +289,7 @@ void uart_tick(uart_t *u, int ticklen_us) {
 
 		int chan = 1; // B
 		if (u->chan[chan].regs[REG_INTCTL] & 0x18) {
-			int in_ch = uart_poll_for_console_character();
-			if (in_ch >= 0) {
-				u->chan[chan].char_rcv = in_ch;
-				u->chan[chan].has_char_rcv = 1;
-			}
+			uart_receive_char(u, chan);
 		}
 	}
 
