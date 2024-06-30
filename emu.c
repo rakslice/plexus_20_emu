@@ -47,7 +47,8 @@ unsigned int fc_bits=0;
 mapper_t *mapper;
 csr_t *csr;
 
-int32_t callstack[2][8192];
+#define CALLSTACK_SIZE 8192
+int32_t callstack[2][CALLSTACK_SIZE];
 int callstack_ptr[2]={0};
 
 #define FLAG_USR_OK 1
@@ -757,6 +758,7 @@ void m68k_trace_cb(unsigned int pc) {
 	//decode jsr/trs instructions for callstack tracing
 	if ((ir&0xFFC0)==0x4e80) callstack[cur_cpu][callstack_ptr[cur_cpu]++]=prev_pc;
 	if (ir==0x4E75) callstack_ptr[cur_cpu]--;
+	callstack_ptr[cur_cpu]%=CALLSTACK_SIZE;
 	prev_pc=pc;
 	unsigned int sr=m68k_get_reg(NULL, M68K_REG_SR);
 	if (do_tracefile&(1<<cur_cpu)) fprintf(tracefile, "%d %d %06x %x\n", insn_id, cur_cpu, pc, sr);
